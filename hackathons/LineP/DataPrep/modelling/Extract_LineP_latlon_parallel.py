@@ -2,8 +2,9 @@ import numpy as np
 from netCDF4 import Dataset,num2date
 import xarray as xr
 import glob
-from concurrent.futures import ThreadPoolExecutor
+#from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
+from concurrent.futures import ProcessPoolExecutor
 
 from shapely.geometry import LineString, Point
 
@@ -74,7 +75,7 @@ def process_year(year):
         ds_out["NO3"].attrs["units"] = "mmol/m3"
         path_out='/gpfs/fs7/dfo/hpcmc/pfm/amh001/DATA/hackathon/'
         # Save to NetCDF
-        outfile = f"{path_out}lineP_band_subset_y{year}_pt25deg.nc"
+        outfile = f"{path_out}lineP_band_subset_y{year}_1deg.nc"
         print(outfile)
 #        encoding = {
  #           var: {"zlib": True, "complevel": 4} for var in ds_out.data_vars
@@ -109,7 +110,7 @@ lats = df['latitude'].values
 lons = df['longitude'].values
 line_coords = list(zip(lons, lats))  # length 26
 track = LineString(line_coords)
-track_buffer = track.buffer(0.25) #.25 degree buffer alongt he line
+track_buffer = track.buffer(1) # degree buffer alongt he line
 
 # Mask points inside buffer
 mask_flat = np.array([
@@ -123,7 +124,10 @@ CONFIG='NEP36-CanOE-TKE'
 path0='/home/amh001/work_fs7/RUN_DIR/Auto-restart/NEP36-CanOE-TKE/HINDCAST/'
 print(path0)
 # Use ThreadPoolExecutor to parallelize year processing
+
 years = range(1996, 2025)
-with ThreadPoolExecutor(max_workers=4) as executor:  # Adjust `max_workers` based on your system
+with ProcessPoolExecutor(max_workers=32) as executor:
     executor.map(process_year, years)
+#with ThreadPoolExecutor(max_workers=32) as executor:  # Adjust `max_workers` based on your system
+#    executor.map(process_year, years)
 
